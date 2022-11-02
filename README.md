@@ -1,1 +1,1 @@
-This is solution to Problem Set 9 in CS50 Harvard course
+This is a solution to Problem Set 9 in CS50 Harvard course
