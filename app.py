@@ -54,7 +54,7 @@ def after_request(response):
 @login_required
 def index():
     """Show portfolio of stocks"""
-    return apology("TODO")
+    return render_template("index.html")
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -94,7 +94,7 @@ def login():
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
-            return apology("invalid username and/or password", 403)
+            return apology("invalid username", 403)
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -122,8 +122,19 @@ def logout():
 @login_required
 def quote():
     """Get stock quote."""
-    return apology("TODO")
-
+    if request.method == "POST":
+        symbol = request.form.get("symbol")
+        if not symbol:
+            return apology("Empty symbol", 399)
+        response = lookup(symbol)
+        # symbol does not exist
+        if not response:
+            return apology("Invalid symbol", 399)
+        else:
+            return render_template("quoted.html", company=response["name"], symbol=response["symbol"], price=response["price"])
+    # GET method
+    else:
+        return render_template("quote.html")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
