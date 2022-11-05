@@ -31,7 +31,6 @@ db = SQL("sqlite:///finance.db")
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
-
 def validate_password(password):
     if len(password) < 8:
         return False
@@ -49,7 +48,6 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
-
 @app.route("/")
 @login_required
 def index():
@@ -61,8 +59,21 @@ def index():
 @login_required
 def buy():
     """Buy shares of stock"""
-    return apology("TODO")
-
+    if request.method == "POST":
+        symbol = request.form.get("symbol")
+        shares = request.form.get("shares")
+        if not symbol:
+            return apology("Empty symbol", 399)
+        if not shares:
+            return apology("Missing shares number", 399)
+        response = lookup(symbol)
+        # symbol does not exist
+        if not response:
+            return apology("Invalid symbol", 399)
+        return redirect("/")
+    # GET method
+    else:
+        return render_template("buy.html")
 
 @app.route("/history")
 @login_required
@@ -74,15 +85,14 @@ def history():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
-
     # Forget any user_id
     session.clear()
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
-
+        username = request.form.get("username")
         # Ensure username was submitted
-        if not request.form.get("username"):
+        if not username:
             return apology("must provide username", 403)
 
         # Ensure password was submitted
@@ -98,14 +108,15 @@ def login():
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
-
+        session["username"] = request.form.get("username")
+        print(session)
         # Redirect user to home page
-        return redirect("/")
+        # return redirect("/")
+        return render_template("index.html", username=username)
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("login.html")
-
 
 @app.route("/logout")
 def logout():
