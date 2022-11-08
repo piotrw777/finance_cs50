@@ -5,7 +5,7 @@ from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
-
+from datetime import datetime
 from helpers import apology, login_required, lookup, usd
 
 # TOKEN = pk_527ac91768d745cfbdb3bc38b821fbc1
@@ -52,8 +52,10 @@ def after_request(response):
 @login_required
 def index():
     """Show portfolio of stocks"""
-    return render_template("index.html")
-
+    cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])[0]["cash"]
+    # compute total value
+    # total = 
+    return render_template("index.html", cash = usd(cash))
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
@@ -70,6 +72,44 @@ def buy():
         # symbol does not exist
         if not response:
             return apology("Invalid symbol", 399)
+        # check how much cash user has
+
+        cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])[0]["cash"]
+
+        if (response["price"] * int(shares) > cash):
+            return apology("Get a better job man ...", 333)
+    
+        # subtract price from user's cash
+
+        db.execute("UPDATE users SET cash = ? WHERE id = ?", cash - response["price"] * int(shares), session["user_id"])
+    
+        prev_shares = db.execute("SELECT t_shares FROM shares WHERE t_symbol = ?", symbol)
+        if not prev_shares:
+            db.execute("INSERT INTO shares ('userid', 't_symbol', 't_shares') VALUES(?,?,?)", session["user_id"], symbol, int(shares))
+        else:
+            db.execute("UPDATE shares SET t_shares = ? WHERE userid = ? AND t_symbol = ?", int(prev_shares[0]["t_shares"]) + int(shares), session["user_id"], symbol)
+        # find how much shared does user has of particular company
+        
+        current_time = datetime.now()
+        current_date = f"{current_time.year}-{current_time.month}-{current_time.day} {current_time.hour}:{current_time.minute}:{current_time.second}"
+        db.execute("INSERT INTO history \
+            ('userid', 't_symbol','t_shares','t_price', 't_type', 't_date') VALUES(?,?,?,?,?,?)", \
+            session["user_id"], symbol, shares, response["price"], 'buy', current_date)
+     
+        # Printing attributes of now().
+        print ("The attributes of now() are : ")
+            
+        print ("Year: ", end = "")
+        print (current_time.year)
+            
+        print ("Month: ", end = "")
+        print (current_time.month)
+            
+        print ("Day: ", end = "")
+        print (current_time.day)
+        print(current_time.hour)
+        print(current_time.minute)
+        print(current_time.second)
         return redirect("/")
     # GET method
     else:
@@ -80,7 +120,6 @@ def buy():
 def history():
     """Show history of transactions"""
     return apology("TODO")
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -127,7 +166,6 @@ def logout():
 
     # Redirect user to login form
     return redirect("/")
-
 
 @app.route("/quote", methods=["GET", "POST"])
 @login_required
