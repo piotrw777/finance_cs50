@@ -6,7 +6,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
-from helpers import apology, login_required, lookup, usd
+from helpers import apology, login_required, lookup, usd, check_price
 
 # TOKEN = pk_527ac91768d745cfbdb3bc38b821fbc1
 
@@ -94,7 +94,7 @@ def buy():
         current_date = f"{current_time.year}-{current_time.month}-{current_time.day} {current_time.hour}:{current_time.minute}:{current_time.second}"
         db.execute("INSERT INTO history \
             ('userid', 't_symbol','t_shares','t_price', 't_type', 't_date') VALUES(?,?,?,?,?,?)", \
-            session["user_id"], symbol, shares, response["price"], 'buy', current_date)
+            session["user_id"], symbol, int(shares), response["price"], 'buy', current_date)
      
         # Printing attributes of now().
         print ("The attributes of now() are : ")
@@ -190,15 +190,11 @@ def register():
     """Register user"""
     if request.method == "POST":
         # validation of data
-
         username = request.form.get("username")
         password = request.form.get("password")
         password2 = request.form.get("password2")
         # type(db.execute("SELECT COUNT\(username\) FROM users WHERE username = \'?\'", username) == '1')
 
-        #debug
-        print(db.execute("SELECT id FROM users WHERE username = ?", "Piotr"))
-        print(db.execute("SELECT id FROM users WHERE username = ?", "Piotr")[0]["id"])
         # Ensure username was submitted
         if not username:
             return apology("must provide username", 403)
@@ -230,4 +226,39 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    if request.method == "POST":
+        symbol = request.form.get("symbol")
+        shares = request.form.get("shares")
+        if not symbol:
+            return apology("Choose a symbol", 349)
+        if not shares:
+            return apology("Missing shares", 348)
+        # validate if user posseses appriopriate amount of shares
+        current_shares=int(db.execute("SELECT t_shares FROM shares WHERE userid = ? AND t_symbol = ?", session["user_id"], symbol)[0]["t_shares"])
+        if (int(shares) > current_shares):
+            return apology("Siała baba mak\nNi mosz tyle", 222)
+
+        price = check_price(symbol)
+
+        # add to cash value of shares
+        cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])[0]["cash"]
+        db.execute("UPDATE users SET cash = ? WHERE id = ?", cash + price * int(shares), session["user_id"])
+
+        # update the database
+        if (int(shares) == current_shares):
+        # user sold all shares -- remove field
+            db.execute("DELETE FROM shares WHERE userid = ? AND t_symbol = ?", session["user_id"], symbol)
+        elif(int(shares) < current_shares):
+            db.execute("UPDATE shares SET t_shares = ? WHERE userid = ? AND t_symbol = ?", current_shares - int(shares), session["user_id"], symbol)
+
+        # update history
+        current_time = datetime.now()
+        current_date = f"{current_time.year}-{current_time.month}-{current_time.day} {current_time.hour}:{current_time.minute}:{current_time.second}"
+        db.execute("INSERT INTO history \
+            ('userid', 't_symbol','t_shares','t_price', 't_type', 't_date') VALUES(?,?,?,?,?,?)", \
+            session["user_id"], symbol, int(shares), price, 'sell', current_date)
+        return redirect("/")
+    else:
+        symbols = db.execute("SELECT t_symbol FROM shares WHERE userid = ?", session["user_id"])
+        return render_template("sell.html", symbols=symbols)
+   

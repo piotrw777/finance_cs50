@@ -37,7 +37,6 @@ def login_required(f):
 
 def lookup(symbol):
     """Look up quote for symbol."""
-
     # Contact API
     try:
         api_key = os.environ.get("API_KEY")
@@ -58,6 +57,9 @@ def lookup(symbol):
     except (KeyError, TypeError, ValueError):
         return None
 
+def check_price(symbol):
+    response = lookup(symbol)
+    return response["price"]
 
 def usd(value):
     """Format value as USD."""
