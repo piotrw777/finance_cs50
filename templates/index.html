@@ -16,8 +16,16 @@
             </tr>
         </thead>
     <tbody>
-            
-        </tbody>
+{% for share in shares %}
+        <tr>
+            <td class="text-start">{{ share["t_symbol"] }}</td>
+            <td class="text-start">{{ share["t_name"] }}</td>
+            <td class="text-end">{{ share["t_shares"] }}</td>
+            <td class="text-end">{{ share["t_price"] }}</td>
+            <td class="text-end">{{ share["t_total"] }}</td>
+        </tr>
+{% endfor %}     
+    </tbody>
         <tfoot>
             <tr>
                 <td class="border-0 fw-bold text-end" colspan="4">Cash</td>
@@ -25,7 +33,7 @@
             </tr>
             <tr>
                 <td class="border-0 fw-bold text-end" colspan="4">TOTAL</td>
-                <td class="border-0 w-bold text-end">$10,000.00</td>
+                <td class="border-0 w-bold text-end">{{ total }}</td>
             </tr>
         </tfoot>
     </table>
