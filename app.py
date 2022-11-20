@@ -182,6 +182,7 @@ def login():
     else:
         return render_template("login.html")
 
+
 @app.route("/logout")
 def logout():
     """Log user out"""
@@ -280,7 +281,7 @@ def sell():
 
         # update history
         current_time = datetime.now()
-        current_date = f"{current_time.year}-{current_time.month}-{current_time.day} {current_time.hour}:{current_time.minute}:{current_time.second}"
+        current_date = f"{current_time.year}-{current_time.month:02d}-{current_time.day:02d} {current_time.hour:02d}:{current_time.minute:02d}:{current_time.second:02d}"
         db.execute("INSERT INTO history \
             ('userid', 't_symbol','t_shares','t_price', 't_type', 't_date') VALUES(?,?,?,?,?,?)", \
             session["user_id"], symbol, int(shares), price, 'sell', current_date)
@@ -289,3 +290,35 @@ def sell():
         symbols = db.execute("SELECT t_symbol FROM shares WHERE userid = ?", session["user_id"])
         return render_template("sell.html", symbols=symbols)
 
+
+@app.route("/change_password", methods=["GET", "POST"])
+def change_password():
+    if request.method == "POST":
+        old_password = request.form.get("old_password")
+        new_password = request.form.get("new_password")
+        userid = session["user_id"]
+        # Ensure username was submitted
+        if not old_password or not new_password:
+            return apology("must provide password", 400)
+
+        # Query database for username
+        rows = db.execute("SELECT * FROM users WHERE id = ?", userid)
+
+        # Ensure username exists and password is correct
+        if not check_password_hash(rows[0]["hash"], old_password):
+            return apology("invalid password", 400)
+
+        if old_password == new_password:
+            return apology("New password is an old one :(", 400)
+
+        retval_password = validate_password(new_password)
+        if (retval_password != 0):
+                return apology(passwords_error_codes[retval_password], 400)
+
+        # change password in a database
+        db.execute("UPDATE users SET hash = ? WHERE id = ?", generate_password_hash(new_password), userid)
+        # Redirect user to home page
+        return redirect("/")
+    # GET method
+    else:
+        return render_template("change_password.html")

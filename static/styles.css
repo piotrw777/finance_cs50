@@ -21,3 +21,27 @@ nav .navbar-brand .green
 {
     color: #2e944b;
 }
+#username 
+{
+    background-color: rgba(220, 232, 228, 0.856);
+}
+#log_out:hover
+{
+    background-color: rgba(161, 144, 234, 0.856);
+}
+#add_cash:hover
+{
+    background-color: rgba(161, 144, 234, 0.856);
+}
+#change_password:hover
+{
+    background-color: rgba(161, 144, 234, 0.856);
+}
+#old_password
+{
+    background-color: rgba(186, 178, 224, 0.856);
+}
+#new_password
+{
+    background-color: rgba(186, 178, 224, 0.856);
+}
